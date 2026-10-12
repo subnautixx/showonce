@@ -70,6 +70,19 @@
     <p id="deployMsg" class="msg" role="status"></p>
   </section>
 
+  <details id="n8nBox" class="settings">
+    <summary>Connect n8n <span id="n8nState"></span></summary>
+    <p class="hint">Do this once. After that, “Create in n8n” puts the workflow straight into your n8n.</p>
+    <label>n8n address <input id="n8nUrl" placeholder="http://localhost:5678"></label>
+    <label>API key <input id="n8nKey" type="password" autocomplete="off" placeholder="from n8n → Settings → n8n API"></label>
+    <div class="row">
+      <button id="n8nConnectBtn">Connect</button>
+      <button id="n8nKeyBtn" class="ghost">Get an API key</button>
+      <button id="n8nForgetBtn" class="ghost">Disconnect</button>
+    </div>
+    <p id="n8nMsg" class="msg" role="status"></p>
+  </details>
+
   <details class="settings">
     <summary>Settings</summary>
     <label>ShowOnce server <input id="serverUrl" placeholder="http://localhost:8787"></label>

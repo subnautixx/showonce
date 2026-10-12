@@ -167,10 +167,53 @@ $('clearBtn').addEventListener('click', () => chrome.runtime.sendMessage({ type:
 $('analyzeBtn').addEventListener('click', () => chrome.runtime.sendMessage({ type: 'showonce:analyze' }));
 $('trigger').addEventListener('change', updateTriggerArg);
 
+// ---------- n8n connection ----------
+const DEFAULT_N8N = 'http://localhost:5678';
+
+// "localhost:5678" or "my.app.n8n.cloud/" -> a full address
+function n8nAddress(value) {
+  const v = value.trim().replace(/\/+$/, '') || DEFAULT_N8N;
+  if (/^https?:\/\//i.test(v)) return v;
+  return `${/^(localhost|127\.|\[::1\])/i.test(v) ? 'http' : 'https'}://${v}`;
+}
+
+function showN8n(n8n) {
+  $('n8nUrl').value = n8n?.url || '';
+  $('n8nKey').value = n8n?.apiKey || '';
+  $('n8nState').className = n8n ? 'ok' : '';
+  $('n8nState').textContent = n8n ? `✓ ${new URL(n8n.url).host}` : '';
+  $('n8nForgetBtn').hidden = !n8n;
+}
+
+$('n8nConnectBtn').addEventListener('click', async () => {
+  const n8n = { url: n8nAddress($('n8nUrl').value), apiKey: $('n8nKey').value.trim() };
+  $('n8nUrl').value = n8n.url;
+  if (!n8n.apiKey) return setMsg('n8nMsg', 'Paste an API key first. “Get an API key” opens the right page in n8n.', 'err');
+  setMsg('n8nMsg', 'Checking…');
+  try {
+    await post('/n8n/check', { n8n });
+    await chrome.storage.local.set({ n8n });
+    showN8n(n8n);
+    setMsg('n8nMsg', 'Connected. “Create in n8n” is ready.', 'ok');
+  } catch (err) {
+    setMsg('n8nMsg', err.message, 'err');
+  }
+});
+
+$('n8nKeyBtn').addEventListener('click', () =>
+  chrome.tabs.create({ url: `${n8nAddress($('n8nUrl').value)}/settings/api` }));
+
+$('n8nForgetBtn').addEventListener('click', async () => {
+  await chrome.storage.local.remove('n8n');
+  showN8n(null);
+  setMsg('n8nMsg', 'Disconnected. The key was removed from this browser.');
+});
+
 $('deployBtn').addEventListener('click', async () => {
+  const { n8n } = await chrome.storage.local.get('n8n');
   setMsg('deployMsg', 'Creating workflow in n8n…');
   try {
-    const { url } = await post('/deploy', collectChoices());
+    const { url } = await post('/deploy', { ...collectChoices(), n8n });
     const link = el('a', { href: url, textContent: 'Open in n8n →' });
     link.addEventListener('click', (e) => { e.preventDefault(); chrome.tabs.create({ url }); });
     const m = $('deployMsg');
@@ -178,6 +221,10 @@ $('deployBtn').addEventListener('click', async () => {
     m.replaceChildren('Done! ', link);
   } catch (err) {
     setMsg('deployMsg', err.message, 'err');
+    if (/not connected/.test(err.message)) {
+      $('n8nBox').open = true;
+      $('n8nBox').scrollIntoView({ behavior: 'smooth' });
+    }
   }
 });
 
@@ -239,8 +286,9 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 
 (async () => {
-  const { plan = null, serverUrl: s } = await chrome.storage.local.get(['plan', 'serverUrl']);
+  const { plan = null, serverUrl: s, n8n = null } = await chrome.storage.local.get(['plan', 'serverUrl', 'n8n']);
   $('serverUrl').value = s || DEFAULT_SERVER;
+  showN8n(n8n);
   await refreshStatus();
   renderPlan(plan);
 })();

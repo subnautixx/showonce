@@ -8,14 +8,14 @@ Record a task once in the browser → a vision model infers the intent → a det
   - `background.js` stores events in `chrome.storage.local`, screenshots via `captureVisibleTab`, calls the server
   - `popup.*` record controls + plan review (variables, trigger) + deploy/download + "any chat AI" copy/paste
 - `server/` zero-dependency Node (>=18.17, ESM)
-  - `src/app.js` HTTP routes: `GET /health`, `POST /analyze`, `POST /build`, `POST /deploy`, plus the no-key ones (`GET /recording`, `POST /plan`, `GET /plan`, `POST /prompt`); only extension origins allowed
+  - `src/app.js` HTTP routes: `GET /health`, `POST /analyze`, `POST /build`, `POST /deploy`, `POST /n8n/check`, plus the no-key ones (`GET /recording`, `POST /plan`, `GET /plan`, `POST /prompt`); only extension origins allowed
   - `src/prompt.js` system prompt + event log formatting (the plan schema lives here)
   - `src/plan.js` validates/normalizes the model's plan
   - `src/builder.js` plan → n8n nodes; one factory per step kind in `STEP_FACTORIES`
   - `src/providers/` claude (default), openai, gemini, ollama, mock
   - `src/handoff.js` provider `mcp`: `/analyze` parks the recording until a plan is handed back (the popup polls `GET /plan`)
   - `src/mcp.js` stdio MCP server (`get_recording`, `submit_plan`); bridges to the HTTP server, hosting one if none runs. Registered in `.mcp.json`
-  - `src/n8n.js` creates the workflow through the n8n public API
+  - `src/n8n.js` checks the connection and creates the workflow through the n8n public API; address + key come from the popup ("Connect n8n", kept in `chrome.storage.local`) or from `.env`
 
 ## Commands (run in `server/`)
 - `npm test` — node:test, must stay green

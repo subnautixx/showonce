@@ -73,5 +73,7 @@ h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: v
 .settings { color: var(--muted); font-size: 12px; }
 .card .settings { margin-top: 10px; }
 .settings summary { cursor: pointer; }
-.settings button, .settings textarea { color: var(--text); }
+.settings button, .settings textarea, .settings input { color: var(--text); }
+.settings + .settings { margin-top: 8px; }
+#n8nState.ok { color: var(--ok); font-weight: 600; }
 .settings label { display: grid; gap: 4px; margin-top: 6px; }

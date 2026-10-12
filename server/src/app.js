@@ -4,7 +4,7 @@ import { HttpError } from './errors.js';
 import { analyzeTrace, traceEvents } from './analyze.js';
 import { buildWorkflow } from './builder.js';
 import { openHandoff, pendingRecording, submitPlan, collectPlan } from './handoff.js';
-import { deployWorkflow } from './n8n.js';
+import { checkN8n, deployWorkflow } from './n8n.js';
 import { chatPrompt } from './prompt.js';
 
 const MAX_BODY = 60 * 1024 * 1024; // recordings carry screenshots
@@ -55,9 +55,11 @@ const routes = {
   'GET /plan': async ({ id }) => collectPlan(id),
   'POST /prompt': async (body) => ({ prompt: chatPrompt(traceEvents(body)) }),
   'POST /build': async ({ plan, variables, trigger }) => ({ workflow: buildWorkflow(plan, { variables, trigger }) }),
-  'POST /deploy': async ({ plan, variables, trigger }) => {
+  // `n8n` ({ url, apiKey }) is what the user connected in the popup; without it server/.env is used.
+  'POST /n8n/check': async ({ n8n }) => checkN8n(n8n),
+  'POST /deploy': async ({ plan, variables, trigger, n8n }) => {
     const workflow = buildWorkflow(plan, { variables, trigger });
-    return { ...(await deployWorkflow(workflow)), workflow };
+    return { ...(await deployWorkflow(workflow, n8n)), workflow };
   },
 };
 

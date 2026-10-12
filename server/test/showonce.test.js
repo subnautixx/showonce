@@ -179,6 +179,43 @@ test('HTTP server: health, build, and blocks foreign origins', async () => {
   }
 });
 
+test('n8n connected from the popup: check the key, then create the workflow', async () => {
+  const created = [];
+  const n8nServer = (await import('node:http')).createServer((req, res) => {
+    let raw = '';
+    req.on('data', (c) => { raw += c; });
+    req.on('end', () => {
+      if (req.headers['x-n8n-api-key'] !== 'good-key') { res.writeHead(401); return res.end('{"message":"unauthorized"}'); }
+      if (req.method === 'POST') created.push(JSON.parse(raw));
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(req.method === 'POST' ? '{"id":"wf1"}' : '{"data":[]}');
+    });
+  });
+  await new Promise((r) => n8nServer.listen(0, '127.0.0.1', r));
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const url = `http://127.0.0.1:${n8nServer.address().port}/`;
+  const call = (path, body) => fetch(`${base}${path}`, { method: 'POST', body: JSON.stringify(body) });
+  try {
+    const ok = await call('/n8n/check', { n8n: { url, apiKey: 'good-key' } });
+    assert.deepEqual(await ok.json(), { ok: true, url: url.slice(0, -1) });
+
+    const bad = await call('/n8n/check', { n8n: { url, apiKey: 'wrong' } });
+    assert.equal(bad.status, 502);
+    assert.match((await bad.json()).error, /did not accept the API key/);
+
+    const noScheme = await call('/n8n/check', { n8n: { url: 'localhost:5678', apiKey: 'good-key' } });
+    assert.equal(noScheme.status, 400);
+
+    const deployed = await call('/deploy', { plan, n8n: { url, apiKey: 'good-key' } }).then((r) => r.json());
+    assert.equal(deployed.url, `${url}workflow/wf1`);
+    assert.deepEqual(Object.keys(created[0]), ['name', 'nodes', 'connections', 'settings']);
+  } finally {
+    await new Promise((r) => server.close(r));
+    await new Promise((r) => n8nServer.close(r));
+  }
+});
+
 const json = (body) => ({ method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
 test('assistant mode: the recording waits until a plan is handed back', async () => {

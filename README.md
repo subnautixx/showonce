@@ -64,7 +64,7 @@ Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** 
 
 Click the ShowOnce icon → **● Record** → do your task → **■ Stop** → **✨ Turn it into a workflow**. Review, then **Create in n8n**.
 
-> To create workflows directly, add `N8N_URL` and `N8N_API_KEY` (n8n → Settings → n8n API) to `server/.env`. Otherwise use **Download JSON** and import it in n8n.
+> **Connect n8n (once):** in the popup open **Connect n8n**, type your n8n address, click **Get an API key** (it opens n8n → Settings → n8n API), paste the key and click **Connect**. The key stays in this browser's extension storage and is only sent to your local ShowOnce server. You can also set `N8N_URL` and `N8N_API_KEY` in `server/.env`, or skip all this and use **Download JSON**.
 
 ## How it works
 
