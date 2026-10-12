@@ -1,0 +1,309 @@
+<!doctype html>
+<!-- Source of docs/demo.gif: a scripted animation on made-up sites (PigeonPost, Gridly). render(t) draws second t; see render-demo.mjs. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ShowOnce demo</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; width: 960px; height: 540px; overflow: hidden; position: relative; background: #e9e6df; color: #1d1b16; font: 13px/1.4 "Segoe UI", system-ui, sans-serif; }
+  .abs { position: absolute; }
+  [hidden] { display: none !important; }
+
+  /* fake browser */
+  #tabs { left: 0; top: 0; width: 960px; height: 34px; background: #d8d4ca; }
+  .tab { top: 6px; width: 170px; height: 28px; border-radius: 8px 8px 0 0; padding: 5px 12px; color: #6f6a60; white-space: nowrap; }
+  .tab.on { background: #fbfaf7; color: #1d1b16; font-weight: 600; }
+  .tab i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 7px; }
+  #bar { left: 0; top: 34px; width: 960px; height: 36px; background: #fbfaf7; border-bottom: 1px solid #e7e3da; }
+  #url { left: 70px; top: 6px; width: 790px; height: 24px; border-radius: 12px; background: #efece5; padding: 2px 14px; color: #6f6a60; }
+  #ext { left: 896px; top: 4px; width: 28px; height: 28px; border-radius: 8px; }
+  #ext b { left: 7px; top: 7px; width: 14px; height: 14px; border-radius: 50%; background: #ff5a36; }
+  #rec { left: 14px; top: 15px; background: #e5484d; color: #fff; font: 700 8px/1 system-ui; padding: 2px 3px; border-radius: 3px; }
+  .page { left: 0; top: 70px; width: 960px; height: 430px; background: #fff; }
+
+  /* PigeonPost */
+  #side { left: 0; top: 0; width: 180px; height: 430px; background: #f4f1ff; padding: 16px; }
+  #side h1 { margin: 0 0 18px; font-size: 16px; color: #5b3df5; }
+  #side p { margin: 0 0 10px; color: #6f6a60; }
+  #side p.on { color: #1d1b16; font-weight: 600; }
+  .mailrow { left: 180px; width: 780px; height: 46px; border-bottom: 1px solid #eee; padding: 13px 20px; display: flex; gap: 18px; }
+  .mailrow b { width: 150px; }
+  .mailrow span { color: #6f6a60; flex: 1; }
+  .mailrow.hot { background: #f4f1ff; }
+  #mail { left: 180px; top: 0; width: 780px; height: 430px; background: #fff; padding: 26px 30px; }
+  #mail h2 { margin: 0 0 4px; font-size: 19px; }
+  #mail .from { color: #6f6a60; margin-bottom: 26px; }
+  #mail .big { font-size: 15px; line-height: 34px; }
+  #sel { left: 119px; top: 140px; height: 24px; background: #b8a9ff; opacity: .55; }
+  #toast { left: 400px; top: 380px; background: #1d1b16; color: #fff; padding: 7px 16px; border-radius: 16px; }
+
+  /* Gridly */
+  #sheetHead { left: 0; top: 0; width: 960px; height: 40px; background: #e9f7ef; padding: 10px 18px; font-weight: 600; color: #1c7c4d; }
+  .cell { height: 34px; border: 1px solid #e3e3e3; border-left: 0; border-top: 0; padding: 7px 10px; background: #fff; white-space: nowrap; overflow: hidden; }
+  .cell.h { background: #f6f6f4; font-weight: 600; color: #6f6a60; }
+  .cell.n { color: #a39d90; text-align: center; background: #f6f6f4; }
+  .cell.focus { outline: 2px solid #1c7c4d; outline-offset: -2px; }
+  .cell.new { background: #e9f7ef; }
+
+  /* ShowOnce popup (same look as the extension) */
+  #popup { left: 640px; top: 76px; width: 304px; background: #fbfaf7; border: 1px solid #e7e3da; border-radius: 12px; box-shadow: 0 14px 40px rgba(0,0,0,.22); padding: 12px; }
+  #popup header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  #popup header i { width: 14px; height: 14px; border-radius: 50%; background: #ff5a36; box-shadow: 0 0 0 3px #ffd6cc; }
+  #popup header span { margin-left: auto; color: #6f6a60; font-size: 11px; }
+  .card { background: #fff; border: 1px solid #e7e3da; border-radius: 10px; padding: 11px; margin-bottom: 9px; }
+  .status { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 9px; }
+  .status em { margin-left: auto; font-style: normal; font-weight: 400; color: #6f6a60; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #e7e3da; }
+  .dot.on { background: #ff5a36; }
+  .btn { display: inline-block; border: 1px solid #e7e3da; border-radius: 8px; padding: 6px 11px; font-weight: 600; margin-right: 6px; }
+  .btn.primary { background: #ff5a36; border-color: #ff5a36; color: #fff; }
+  .btn.off { opacity: .4; }
+  .btn.wide { display: block; text-align: center; margin: 0; }
+  .muted { color: #6f6a60; }
+  #plan h2 { margin: 0 0 3px; font-size: 14px; }
+  #plan ol { margin: 8px 0; padding-left: 20px; }
+  #plan li { margin: 4px 0; }
+  #plan code { font-size: 10px; color: #6f6a60; }
+  #plan .run { border-top: 1px solid #e7e3da; padding-top: 8px; margin-top: 8px; }
+
+  /* the result */
+  #canvas { left: 0; top: 0; width: 960px; height: 500px; background: #f7f6f3; background-image: radial-gradient(#d9d5cb 1px, transparent 1px); background-size: 20px 20px; }
+  #canvas h2 { left: 40px; top: 28px; margin: 0; font-size: 20px; }
+  #canvas p { left: 40px; top: 58px; margin: 0; color: #6f6a60; }
+  .node { top: 190px; width: 170px; height: 104px; background: #fff; border: 1.5px solid #cfcabf; border-radius: 12px; padding: 14px; box-shadow: 0 4px 14px rgba(0,0,0,.07); }
+  .node i { display: block; width: 30px; height: 30px; border-radius: 8px; margin-bottom: 9px; }
+  .node b { display: block; }
+  .node small { color: #6f6a60; }
+  .node.done { border-color: #2f9e6b; }
+  .node u { right: 10px; top: 10px; width: 20px; height: 20px; border-radius: 50%; background: #2f9e6b; color: #fff; text-decoration: none; text-align: center; font: 700 13px/20px system-ui; }
+  .wire { top: 241px; width: 50px; height: 2px; background: #cfcabf; }
+  .wire.done { background: #2f9e6b; }
+
+  #caption { left: 0; top: 500px; width: 960px; height: 40px; background: #1d1b16; color: #fff; font: 600 15px/40px system-ui, sans-serif; text-align: center; }
+  #cursor { width: 22px; height: 22px; z-index: 9; }
+  #ripple { border-radius: 50%; border: 2px solid #ff5a36; z-index: 8; }
+</style>
+</head>
+<body>
+  <div id="browser">
+    <div id="tabs" class="abs">
+      <div id="tabMail" class="tab abs" style="left:12px"><i style="background:#5b3df5"></i>PigeonPost — Inbox</div>
+      <div id="tabSheet" class="tab abs" style="left:186px"><i style="background:#1c7c4d"></i>Gridly — Invoices</div>
+    </div>
+    <div id="bar" class="abs">
+      <div id="url" class="abs"></div>
+      <div id="ext" class="abs"><b class="abs"></b><span id="rec" class="abs">REC</span></div>
+    </div>
+
+    <div id="mailPage" class="page abs">
+      <div id="side" class="abs"><h1>PigeonPost</h1><p class="on">Inbox · 3</p><p>Starred</p><p>Sent</p><p>Drafts</p></div>
+      <div id="mailList">
+        <div class="mailrow abs" style="top:40px"><b>Team Lunch</b><span>Friday pizza: vote for your toppings</span>09:12</div>
+        <div id="invoiceRow" class="mailrow abs" style="top:86px"><b>Acme Hosting</b><span>Invoice #1042 is ready</span>08:47</div>
+        <div class="mailrow abs" style="top:132px"><b>Gridly</b><span>Your weekly sheet summary</span>Yesterday</div>
+        <div class="mailrow abs" style="top:178px"><b>Nora Lindqvist</b><span>Re: Q4 planning notes</span>Yesterday</div>
+        <div class="mailrow abs" style="top:224px"><b>Parcelbird</b><span>Your package is out for delivery</span>Mon</div>
+      </div>
+      <div id="mail" class="abs">
+        <h2>Invoice #1042 is ready</h2>
+        <div class="from">Acme Hosting &lt;billing@acme-hosting.example&gt;</div>
+        <div class="big">Hello! Your invoice for October is ready.</div>
+        <div class="big">Amount due: <b>$189.90</b></div>
+        <div class="big">Due date: <b>Nov 5</b></div>
+        <div class="big muted">Thank you for hosting with Acme.</div>
+        <div id="sel" class="abs"></div>
+      </div>
+      <div id="toast" class="abs">Copied</div>
+    </div>
+
+    <div id="sheetPage" class="page abs">
+      <div id="sheetHead" class="abs">Gridly · Invoices 2026</div>
+      <div id="grid"></div>
+    </div>
+
+    <div id="popup" class="abs">
+      <header><i></i><b style="font-size:15px">ShowOnce</b><span>do it once, automate forever</span></header>
+      <div class="card">
+        <div class="status"><span id="pDot" class="dot"></span><span id="pStatus"></span><em id="pCount"></em></div>
+        <span id="pRecord" class="btn primary">● Record</span><span id="pStop" class="btn">■ Stop</span><span class="btn muted" style="border-color:transparent">Clear</span>
+      </div>
+      <div id="pAnalyze" class="card"><span id="pTurn" class="btn primary wide"></span><div id="pThinking" class="muted" style="margin-top:8px"></div></div>
+      <div id="plan" class="card">
+        <h2>Log new invoices in my sheet</h2>
+        <div class="muted">Finds invoice emails, reads the amount and due date, and adds a row to “Invoices”.</div>
+        <ol>
+          <li id="s1">Find new invoice emails <code>Mail</code></li>
+          <li id="s2">Extract amount and due date <code>Code</code></li>
+          <li id="s3">Add a row to “Invoices” <code>Sheets</code></li>
+        </ol>
+        <div id="pRun" class="run"><span class="muted">Run it:</span> <b>weekdays at 9:00</b></div>
+        <div style="margin-top:10px"><span id="pCreate" class="btn primary">Create in n8n</span><span class="btn">Download JSON</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="canvas" class="abs">
+    <h2 class="abs">Log new invoices in my sheet</h2>
+    <p id="canvasSub" class="abs"></p>
+    <div id="nodes"></div>
+  </div>
+
+  <div id="caption" class="abs"></div>
+  <div id="ripple" class="abs"></div>
+  <svg id="cursor" class="abs" viewBox="0 0 22 22"><path d="M3 2l15 8-6.5 1.8L9 18z" fill="#1d1b16" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const DURATION = 17.5;
+
+// [time, x, y]: where the pointer is; it glides between them
+const PATH = [
+  [0, 520, 330], [0.9, 702, 176], [1.15, 702, 176],
+  [1.9, 470, 179], [2.15, 470, 179],
+  [2.7, 299, 224], [3.1, 359, 224], [3.3, 359, 224],
+  [3.9, 270, 20], [4.05, 270, 20],
+  [4.6, 150, 263], [5.4, 150, 263],
+  [6.4, 910, 52], [6.6, 910, 52],
+  [7.0, 780, 176], [7.15, 780, 176],
+  [7.6, 792, 241], [7.8, 792, 241], [8.4, 560, 380], [11.4, 560, 380],
+  [12.2, 716, 416], [12.5, 716, 416],
+];
+const CLICKS = [1.0, 2.0, 3.9, 4.6, 6.5, 7.0, 7.6, 12.3];
+
+const NODES = [
+  { name: 'Schedule', sub: 'Weekdays 9:00', color: '#ff8a3d' },
+  { name: 'Find invoice emails', sub: 'Mail', color: '#5b3df5' },
+  { name: 'Extract amount', sub: 'Code', color: '#e0a100' },
+  { name: 'Add row to Invoices', sub: 'Sheets', color: '#1c7c4d' },
+];
+
+const ROWS = [
+  ['Vendor', 'Amount', 'Due date', 'Status'],
+  ['Northwind Power', '$74.20', 'Oct 28', 'Paid'],
+  ['Lumen Internet', '$59.00', 'Nov 1', 'Paid'],
+  ['Paperfox Supplies', '$132.45', 'Nov 3', 'Open'],
+  ['Acme Hosting', '$189.90', 'Nov 5', 'Open'],
+  ['', '', '', ''],
+  ['', '', '', ''],
+];
+const COLS = [[0, 44], [44, 260], [304, 200], [504, 200], [704, 256]];
+
+// static markup built once
+$('grid').innerHTML = ROWS.map((row, r) => [r || '', ...row].map((text, c) =>
+  `<div class="cell abs ${r === 0 ? 'h' : ''} ${c === 0 ? 'n' : ''}" data-r="${r}" data-c="${c}" style="left:${COLS[c][0]}px;top:${40 + r * 34}px;width:${COLS[c][1]}px">${text}</div>`).join('')).join('');
+$('nodes').innerHTML = NODES.map((n, i) =>
+  `<div class="node abs" id="n${i}" style="left:${60 + i * 220}px"><i style="background:${n.color}"></i><b>${n.name}</b><small>${n.sub}</small><u class="abs" id="k${i}">✓</u></div>` +
+  (i < NODES.length - 1 ? `<div class="wire abs" id="w${i}" style="left:${230 + i * 220}px"></div>` : '')).join('');
+
+const ease = (p) => (p < 0.5 ? 2 * p * p : 1 - ((-2 * p + 2) ** 2) / 2);
+const show = (id, on) => $(id).toggleAttribute('hidden', !on); // also works on the <svg> pointer
+
+function pointer(t) {
+  let a = PATH[0];
+  for (const b of PATH) {
+    if (t <= b[0]) {
+      const p = b[0] === a[0] ? 1 : ease((t - a[0]) / (b[0] - a[0]));
+      return [a[1] + (b[1] - a[1]) * p, a[2] + (b[2] - a[2]) * p];
+    }
+    a = b;
+  }
+  return [a[1], a[2]];
+}
+
+function caption(t) {
+  if (t < 1.0) return 'Click Record';
+  if (t < 6.5) return 'Do the task once, as usual: copy the invoice into your sheet';
+  if (t < 7.6) return 'Stop when you are done';
+  if (t < 9.6) return 'The AI works out what you were doing';
+  if (t < 12.5) return 'It understood the task, not the clicks';
+  return 'A real n8n workflow that does it for you, forever';
+}
+
+/** Draws the whole scene as it is at second t. No timers: every frame is a pure function of t. */
+function render(t) {
+  const result = t >= 12.5;
+  show('browser', !result);
+  show('canvas', result);
+  $('caption').textContent = caption(t);
+
+  // pointer and click ripple
+  const [x, y] = pointer(t);
+  show('cursor', !result);
+  $('cursor').style.left = `${x}px`;
+  $('cursor').style.top = `${y}px`;
+  const click = CLICKS.find((c) => t >= c && t < c + 0.35);
+  show('ripple', click !== undefined && !result);
+  if (click !== undefined) {
+    const [cx, cy] = pointer(click);
+    const r = 6 + ((t - click) / 0.35) * 16;
+    Object.assign($('ripple').style, { left: `${cx - r}px`, top: `${cy - r}px`, width: `${2 * r}px`, height: `${2 * r}px`, opacity: 1 - (t - click) / 0.35 });
+  }
+
+  // browser chrome
+  const onSheet = t >= 3.9;
+  $('tabMail').className = `tab abs ${onSheet ? '' : 'on'}`;
+  $('tabSheet').className = `tab abs ${onSheet ? 'on' : ''}`;
+  $('url').textContent = onSheet ? 'gridly.example/sheets/invoices-2026' : 'pigeonpost.example/inbox';
+  const recording = t >= 1.0 && t < 7.0;
+  show('rec', recording);
+
+  // PigeonPost
+  show('mailPage', !onSheet);
+  $('invoiceRow').className = `mailrow abs ${t >= 1.6 && t < 2.0 ? 'hot' : ''}`;
+  show('mailList', t < 2.0);
+  show('mail', t >= 2.0);
+  const sel = Math.max(0, Math.min(1, (t - 2.7) / 0.4));
+  $('sel').style.width = `${sel * 60}px`;
+  show('toast', t >= 3.15 && t < 3.8);
+
+  // Gridly: the last filled row gets typed in
+  show('sheetPage', onSheet);
+  const typed = Math.max(0, Math.min(1, (t - 4.75) / 0.9));
+  document.querySelectorAll('#grid .cell[data-r="4"]').forEach((cell) => {
+    const c = Number(cell.dataset.c);
+    if (c === 0) return;
+    const full = ROWS[4][c - 1];
+    const part = Math.max(0, Math.min(1, typed * 4 - (c - 1)));
+    cell.textContent = full.slice(0, Math.round(full.length * part));
+    cell.className = `cell abs ${t >= 4.6 && part < 1 && part > 0 || (c === 1 && t >= 4.6 && typed === 0) ? 'focus' : ''} ${typed >= 1 ? 'new' : ''}`;
+  });
+
+  // ShowOnce popup
+  const popup = t < 1.05 || (t >= 6.5 && !result);
+  show('popup', popup);
+  const stopped = t >= 7.0;
+  $('pDot').className = `dot ${recording ? 'on' : ''}`;
+  $('pStatus').textContent = recording ? 'Recording…' : stopped ? 'Recording ready' : 'Idle';
+  $('pCount').textContent = t >= 6.5 ? '9 actions' : '';
+  $('pRecord').className = `btn primary ${recording ? 'off' : ''}`;
+  $('pStop').className = `btn ${recording ? '' : 'off'}`;
+  const thinking = t >= 7.6 && t < 9.6;
+  const planned = t >= 9.6;
+  show('pAnalyze', !planned);
+  $('pTurn').className = `btn primary wide ${stopped && !thinking ? '' : 'off'}`;
+  $('pTurn').textContent = thinking ? `Thinking${'.'.repeat(1 + Math.floor((t - 7.6) / 0.35) % 3)}` : '✨ Turn it into a workflow';
+  $('pThinking').textContent = thinking ? 'Reading your actions and screenshots' : '';
+  show('plan', planned);
+  ['s1', 's2', 's3'].forEach((id, i) => { $(id).style.visibility = t >= 9.9 + i * 0.5 ? 'visible' : 'hidden'; });
+  $('pRun').style.visibility = t >= 11.4 ? 'visible' : 'hidden';
+
+  // the workflow
+  NODES.forEach((_, i) => {
+    const there = t >= 12.8 + i * 0.4;
+    const done = t >= 14.8 + i * 0.45;
+    $(`n${i}`).style.visibility = there ? 'visible' : 'hidden';
+    $(`n${i}`).className = `node abs ${done ? 'done' : ''}`;
+    show(`k${i}`, done);
+    if ($(`w${i}`)) {
+      $(`w${i}`).style.visibility = t >= 13.0 + i * 0.4 ? 'visible' : 'hidden';
+      $(`w${i}`).className = `wire abs ${t >= 15.0 + i * 0.45 ? 'done' : ''}`;
+    }
+  });
+  $('canvasSub').textContent = t >= 16.2 ? 'Ran by itself · 1 new row in Invoices' : t >= 14.6 ? 'Running…' : 'Created from one recording';
+}
+
+render(Number(new URLSearchParams(location.search).get('t')) || 0);
+</script>
+</body>
+</html>

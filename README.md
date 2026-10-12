@@ -4,8 +4,10 @@
 
 ### Do a task once in your browser. Get an n8n workflow that does it forever.
 
-<!-- The extension popup with an example recording. A screen capture of a real task, ending in n8n, would be even better. -->
-<img src="docs/demo.gif" alt="The ShowOnce popup: record a task, the AI lists the steps it understood, you get an n8n workflow" width="380">
+<!-- An animation on made-up sites, generated from docs/demo.html with `node docs/render-demo.mjs`. -->
+<img src="docs/demo.gif" alt="Animation: someone copies an invoice from an email into a spreadsheet once, and ShowOnce turns it into an n8n workflow" width="720">
+
+<sub>Illustration with made-up sites.</sub>
 
 **No nodes to drag. No expressions to learn. Just show it.**
 
