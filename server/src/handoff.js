@@ -2,11 +2,9 @@
 // until someone hands back a plan: an AI assistant over MCP (mcp.js), or the user pasting a chat AI's answer.
 import { randomUUID } from 'node:crypto';
 import { config } from './config.js';
-import { HttpError } from './errors.js';
-import { extractJson } from './json.js';
-import { normalizePlan } from './plan.js';
-import { SYSTEM_PROMPT } from './prompt.js';
-import { buildParts, traceEvents } from './analyze.js';
+import { HttpError } from '../../extension/core/errors.js';
+import { SYSTEM_PROMPT } from '../../extension/core/prompt.js';
+import { buildParts, planFromText, traceEvents } from '../../extension/core/analyze.js';
 
 let waiting = null; // { id, events, plan }
 
@@ -27,12 +25,7 @@ export function pendingRecording(images) {
 
 /** Accepts a plan object, or text that contains one (a chat AI's answer). */
 export function submitPlan({ plan, text } = {}) {
-  let raw = plan;
-  if (!raw || typeof raw !== 'object') {
-    try { raw = extractJson(text ?? plan); }
-    catch (err) { throw new HttpError(422, `No plan found in that text (${err.message}).`); }
-  }
-  const normalized = normalizePlan(raw);
+  const normalized = planFromText(plan && typeof plan === 'object' ? plan : (text ?? plan));
   if (waiting) waiting.plan = normalized;
   return { plan: normalized, delivered: !!waiting };
 }

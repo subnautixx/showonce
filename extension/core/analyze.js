@@ -1,4 +1,3 @@
-import { config as defaultConfig } from './config.js';
 import { HttpError } from './errors.js';
 import { extractJson } from './json.js';
 import { normalizePlan } from './plan.js';
@@ -36,7 +35,17 @@ export function traceEvents(trace) {
   return events;
 }
 
-export async function analyzeTrace(trace, config = defaultConfig) {
+/** A chat AI's answer (or a plan object) -> a clean plan. */
+export function planFromText(text) {
+  if (text && typeof text === 'object') return normalizePlan(text);
+  let raw;
+  try { raw = extractJson(text); }
+  catch (err) { throw new HttpError(422, `No plan found in that text (${err.message}).`); }
+  return normalizePlan(raw);
+}
+
+/** `config`: { provider, model, maxImages, keys, openaiBaseUrl, ollamaUrl } (see providers/index.js). */
+export async function analyzeTrace(trace, config) {
   const events = traceEvents(trace);
   const provider = getProvider(config);
   const raw = await provider.complete({

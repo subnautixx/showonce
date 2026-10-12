@@ -11,6 +11,8 @@ export async function complete({ system, parts, model, config }) {
       'content-type': 'application/json',
       'x-api-key': config.keys.claude,
       'anthropic-version': '2023-06-01',
+      // The extension calls the API straight from the browser, with the user's own key.
+      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model,

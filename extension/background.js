@@ -1,5 +1,9 @@
-// ShowOnce service worker: keeps the recording, takes screenshots and talks to the local server.
+// ShowOnce service worker: keeps the recording, takes screenshots and asks the model for a plan.
+import { analyzeTrace } from './core/analyze.js';
+import { DEFAULT_MODELS } from './core/providers/index.js';
+
 const DEFAULT_SERVER = 'http://localhost:8787';
+const MAX_IMAGES = 20;          // screenshots sent to the model per recording
 const MAX_SHOTS = 40;
 const SHOT_INTERVAL_MS = 700;   // captureVisibleTab allows ~2 calls/second
 const SHOT_DELAY_MS = 350;      // capture the page *after* the action took effect
@@ -91,27 +95,46 @@ function keepAlive() {
   return () => clearInterval(t);
 }
 
-async function analyze() {
-  const { events = [], serverUrl = DEFAULT_SERVER } = await chrome.storage.local.get(['events', 'serverUrl']);
-  if (!events.length) throw new Error('Nothing recorded yet.');
-  await chrome.storage.local.set({ analysis: { status: 'running', startedAt: Date.now() } });
-  const stop = keepAlive();
+// Assistant mode: the local helper keeps the recording until an AI assistant hands back the plan (the popup polls for it).
+async function handToAssistant(events, serverUrl) {
+  let res;
   try {
-    const res = await fetch(`${serverUrl}/analyze`, {
+    res = await fetch(`${serverUrl}/analyze`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ events }),
     });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
-    // Assistant mode: the server keeps the recording until an AI assistant hands back the plan (the popup polls for it).
-    if (data.pending) await chrome.storage.local.set({ analysis: { status: 'waiting', id: data.id } });
-    else await chrome.storage.local.set({ plan: data.plan, analysis: { status: 'done' } });
+  } catch {
+    throw new Error(`Could not reach the ShowOnce helper at ${serverUrl}. It starts with your AI assistant once ShowOnce is added to it (see Set up).`);
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+  if (data.pending) return { analysis: { status: 'waiting', id: data.id } };
+  return { plan: data.plan, analysis: { status: 'done' } };
+}
+
+async function analyze() {
+  const { events = [], serverUrl = DEFAULT_SERVER, ai } = await chrome.storage.local.get(['events', 'serverUrl', 'ai']);
+  if (!events.length) throw new Error('Nothing recorded yet.');
+  await chrome.storage.local.set({ analysis: { status: 'running', startedAt: Date.now() } });
+  const stop = keepAlive();
+  try {
+    if (ai?.provider === 'mcp') {
+      await chrome.storage.local.set(await handToAssistant(events, serverUrl.replace(/\/+$/, '')));
+      return;
+    }
+    // Every other provider is called straight from here, with the user's own key.
+    const plan = await analyzeTrace({ events }, {
+      provider: ai?.provider,
+      model: ai?.model || DEFAULT_MODELS[ai?.provider],
+      maxImages: MAX_IMAGES,
+      keys: { [ai?.provider]: ai?.apiKey },
+      openaiBaseUrl: ai?.baseUrl || 'https://api.openai.com/v1',
+      ollamaUrl: ai?.baseUrl || 'http://localhost:11434',
+    });
+    await chrome.storage.local.set({ plan, analysis: { status: 'done' } });
   } catch (err) {
-    const msg = err instanceof TypeError
-      ? `Could not reach the ShowOnce server at ${serverUrl}. Is it running? (npm start in /server)`
-      : err.message;
-    await chrome.storage.local.set({ analysis: { status: 'error', error: msg } });
+    await chrome.storage.local.set({ analysis: { status: 'error', error: err.message } });
   } finally {
     stop();
   }

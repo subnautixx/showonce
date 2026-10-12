@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DEFAULT_MODELS } from '../../extension/core/providers/index.js';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -19,14 +20,7 @@ function loadEnv(file) {
 
 loadEnv(path.join(ROOT, '.env'));
 
-const DEFAULT_MODELS = {
-  claude: 'claude-sonnet-5-5',
-  openai: 'gpt-4o',
-  gemini: 'gemini-2.5-flash',
-  ollama: 'qwen2.5vl',
-  mock: 'mock',
-  mcp: 'your AI assistant',
-};
+const MODELS = { ...DEFAULT_MODELS, mock: 'mock', mcp: 'your AI assistant' };
 
 const env = process.env;
 const provider = (env.SHOWONCE_PROVIDER || 'claude').toLowerCase();
@@ -35,7 +29,7 @@ export const config = {
   port: Number(env.PORT || 8787),
   host: env.HOST || '127.0.0.1',
   provider,
-  model: env.SHOWONCE_MODEL || DEFAULT_MODELS[provider],
+  model: env.SHOWONCE_MODEL || MODELS[provider],
   maxImages: Number(env.SHOWONCE_MAX_IMAGES || 20),
   keys: {
     claude: env.ANTHROPIC_API_KEY,

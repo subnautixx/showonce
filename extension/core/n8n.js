@@ -1,12 +1,11 @@
-import { config as defaultConfig } from './config.js';
 import { HttpError } from './errors.js';
 
-/** The n8n to talk to: what the user connected in the extension, else server/.env. */
-function target(n8n, config) {
-  const url = String(n8n?.url || config.n8nUrl || '').trim().replace(/\/+$/, '');
-  const apiKey = String(n8n?.apiKey || config.n8nApiKey || '').trim();
+/** `n8n`: { url, apiKey }, as connected in the popup (the server can fall back to its .env). */
+function target(n8n) {
+  const url = String(n8n?.url || '').trim().replace(/\/+$/, '');
+  const apiKey = String(n8n?.apiKey || '').trim();
   if (!url || !apiKey) {
-    throw new HttpError(400, 'n8n is not connected yet. Open "Connect n8n" in the ShowOnce popup, or use "Download JSON" and import it in n8n.');
+    throw new HttpError(400, 'n8n is not connected yet. Open "Set up" in the ShowOnce popup, or use "Download JSON" and import it in n8n.');
   }
   if (!/^https?:\/\//i.test(url)) throw new HttpError(400, 'The n8n address must start with http:// or https://');
   return { url, apiKey };
@@ -29,17 +28,27 @@ async function call({ url, apiKey }, path, init = {}) {
   return { res, text };
 }
 
+/** Is there an n8n at this address at all? No key needed. */
+export async function n8nReachable(url) {
+  try {
+    const res = await fetch(`${String(url).replace(/\/+$/, '')}/healthz`, { signal: AbortSignal.timeout(4000) });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 /** Checks the address and key without changing anything in n8n. */
-export async function checkN8n(n8n, config = defaultConfig) {
-  const to = target(n8n, config);
+export async function checkN8n(n8n) {
+  const to = target(n8n);
   const { res, text } = await call(to, '/workflows?limit=1');
   if (!res.ok) throw new HttpError(502, `${to.url} did not answer like n8n (${res.status}): ${text.slice(0, 200)}`);
   return { ok: true, url: to.url };
 }
 
 /** Creates the workflow in n8n through its public API. Returns { id, url }. */
-export async function deployWorkflow(workflow, n8n, config = defaultConfig) {
-  const to = target(n8n, config);
+export async function deployWorkflow(workflow, n8n) {
+  const to = target(n8n);
   // The API rejects unknown top-level fields, so send exactly these.
   const body = {
     name: workflow.name,

@@ -1,6 +1,8 @@
 // Turns a ShowOnce plan into an importable n8n workflow.
-import { randomUUID } from 'node:crypto';
 import { normalizePlan, normalizeTrigger, normalizeVariables, varName } from './plan.js';
+
+// The same file runs in the extension and in Node, so no node: imports here.
+const randomUUID = () => globalThis.crypto.randomUUID();
 
 const DX = 260;
 const Y = 300;

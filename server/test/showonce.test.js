@@ -5,11 +5,11 @@ import { readFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import { buildWorkflow, render } from '../src/builder.js';
-import { extractJson } from '../src/json.js';
-import { normalizePlan } from '../src/plan.js';
-import { analyzeTrace, buildParts } from '../src/analyze.js';
-import { eventLog } from '../src/prompt.js';
+import { buildWorkflow, render } from '../../extension/core/builder.js';
+import { extractJson } from '../../extension/core/json.js';
+import { normalizePlan } from '../../extension/core/plan.js';
+import { analyzeTrace, buildParts } from '../../extension/core/analyze.js';
+import { eventLog } from '../../extension/core/prompt.js';
 import { server } from '../src/app.js';
 import { config } from '../src/config.js';
 

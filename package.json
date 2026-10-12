@@ -1,0 +1,26 @@
+{
+  "name": "showonce",
+  "version": "0.2.0",
+  "description": "Do a task once in your browser. Get an n8n workflow that does it forever.",
+  "type": "module",
+  "bin": {
+    "showonce": "server/src/cli.js"
+  },
+  "files": [
+    "extension",
+    "server/src",
+    "server/examples",
+    "server/.env.example"
+  ],
+  "scripts": {
+    "start": "node server/src/index.js",
+    "demo": "node server/src/demo.js",
+    "mcp": "node server/src/mcp.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": "github:subnautixx/showonce",
+  "license": "MIT"
+}

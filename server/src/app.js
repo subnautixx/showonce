@@ -1,11 +1,15 @@
 import http from 'node:http';
 import { config } from './config.js';
-import { HttpError } from './errors.js';
-import { analyzeTrace, traceEvents } from './analyze.js';
-import { buildWorkflow } from './builder.js';
+import { HttpError } from '../../extension/core/errors.js';
+import { analyzeTrace, traceEvents } from '../../extension/core/analyze.js';
+import { buildWorkflow } from '../../extension/core/builder.js';
+import { checkN8n, deployWorkflow } from '../../extension/core/n8n.js';
+import { chatPrompt } from '../../extension/core/prompt.js';
 import { openHandoff, pendingRecording, submitPlan, collectPlan } from './handoff.js';
-import { checkN8n, deployWorkflow } from './n8n.js';
-import { chatPrompt } from './prompt.js';
+import './providers/mock.js';
+
+// What the popup connected wins; server/.env is the fallback.
+const n8nOf = (n8n) => ({ url: n8n?.url || config.n8nUrl, apiKey: n8n?.apiKey || config.n8nApiKey });
 
 const MAX_BODY = 60 * 1024 * 1024; // recordings carry screenshots
 
@@ -49,17 +53,17 @@ function send(res, status, data, origin) {
 const routes = {
   'GET /health': async () => ({ ok: true, provider: config.provider, model: config.model, n8n: !!(config.n8nUrl && config.n8nApiKey) }),
   // In assistant mode the plan comes later, from whoever picks the recording up (see handoff.js).
-  'POST /analyze': async (body) => (config.provider === 'mcp' ? openHandoff(body) : { plan: await analyzeTrace(body) }),
+  'POST /analyze': async (body) => (config.provider === 'mcp' ? openHandoff(body) : { plan: await analyzeTrace(body, config) }),
   'GET /recording': async ({ images }) => pendingRecording(images),
   'POST /plan': async (body) => submitPlan(body),
   'GET /plan': async ({ id }) => collectPlan(id),
   'POST /prompt': async (body) => ({ prompt: chatPrompt(traceEvents(body)) }),
   'POST /build': async ({ plan, variables, trigger }) => ({ workflow: buildWorkflow(plan, { variables, trigger }) }),
   // `n8n` ({ url, apiKey }) is what the user connected in the popup; without it server/.env is used.
-  'POST /n8n/check': async ({ n8n }) => checkN8n(n8n),
+  'POST /n8n/check': async ({ n8n }) => checkN8n(n8nOf(n8n)),
   'POST /deploy': async ({ plan, variables, trigger, n8n }) => {
     const workflow = buildWorkflow(plan, { variables, trigger });
-    return { ...(await deployWorkflow(workflow, n8n)), workflow };
+    return { ...(await deployWorkflow(workflow, n8nOf(n8n))), workflow };
   },
 };
 

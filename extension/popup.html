@@ -12,6 +12,49 @@
     <span class="tagline">do it once, automate forever</span>
   </header>
 
+  <details id="setup" class="card setup">
+    <summary><strong>Set up</strong> <span id="setupState" class="muted"></span></summary>
+
+    <h3>1 · The AI that reads your recording</h3>
+    <select id="aiProvider" class="wide">
+      <option value="">Choose one…</option>
+      <option value="chat">Any AI chat, by copy and paste (no key)</option>
+      <option value="claude">Claude (API key)</option>
+      <option value="gemini">Gemini (API key)</option>
+      <option value="openai">OpenAI or compatible (API key)</option>
+      <option value="ollama">Ollama on this computer (no key)</option>
+      <option value="mcp">My AI assistant, over MCP (no key)</option>
+    </select>
+    <div id="aiKeyRow" class="row" hidden>
+      <input id="aiKey" type="password" autocomplete="off" placeholder="API key">
+      <button id="aiKeyBtn" class="ghost">Get a key</button>
+    </div>
+    <input id="aiBase" class="wide" hidden>
+    <input id="aiModel" class="wide" hidden>
+    <label id="serverRow" hidden>ShowOnce helper address <input id="serverUrl" placeholder="http://localhost:8787"></label>
+    <p id="aiHint" class="hint"></p>
+    <button id="aiCopyBtn" hidden>Copy the command</button>
+    <p id="aiMsg" class="msg" role="status"></p>
+
+    <h3>2 · Your n8n <span id="n8nState"></span></h3>
+    <p class="hint">Optional. Connect it once and “Create in n8n” puts workflows straight into your n8n. Without it, “Download JSON” still works.</p>
+    <label>n8n address <input id="n8nUrl" placeholder="http://localhost:5678"></label>
+    <label>API key <input id="n8nKey" type="password" autocomplete="off" placeholder="from n8n → Settings → n8n API"></label>
+    <div class="row">
+      <button id="n8nConnectBtn">Connect</button>
+      <button id="n8nKeyBtn" class="ghost">Get an API key</button>
+      <button id="n8nForgetBtn" class="ghost" hidden>Disconnect</button>
+    </div>
+    <p id="n8nMsg" class="msg" role="status"></p>
+    <div id="n8nHelp" hidden>
+      <p class="hint">No n8n there. Two ways to get one:</p>
+      <div class="row">
+        <button id="n8nCloudBtn">Try n8n cloud</button>
+        <button id="n8nDockerBtn">Copy the Docker command</button>
+      </div>
+    </div>
+  </details>
+
   <section class="card">
     <div class="status">
       <span id="dot" class="dot"></span>
@@ -29,8 +72,8 @@
   <section class="card">
     <button id="analyzeBtn" class="primary wide">✨ Turn it into a workflow</button>
     <p id="msg" class="msg" role="status"></p>
-    <details class="settings">
-      <summary>No API key? Use any AI chat</summary>
+    <details id="chatBox" class="settings">
+      <summary>Use any AI chat (no key)</summary>
       <p class="hint">Copy the prompt (or save it as a file), send it to ChatGPT, Claude, Gemini… then paste the answer below. Screenshots are not included.</p>
       <div class="row">
         <button id="copyPromptBtn">Copy prompt</button>
@@ -70,24 +113,6 @@
     <p id="deployMsg" class="msg" role="status"></p>
   </section>
 
-  <details id="n8nBox" class="settings">
-    <summary>Connect n8n <span id="n8nState"></span></summary>
-    <p class="hint">Do this once. After that, “Create in n8n” puts the workflow straight into your n8n.</p>
-    <label>n8n address <input id="n8nUrl" placeholder="http://localhost:5678"></label>
-    <label>API key <input id="n8nKey" type="password" autocomplete="off" placeholder="from n8n → Settings → n8n API"></label>
-    <div class="row">
-      <button id="n8nConnectBtn">Connect</button>
-      <button id="n8nKeyBtn" class="ghost">Get an API key</button>
-      <button id="n8nForgetBtn" class="ghost">Disconnect</button>
-    </div>
-    <p id="n8nMsg" class="msg" role="status"></p>
-  </details>
-
-  <details class="settings">
-    <summary>Settings</summary>
-    <label>ShowOnce server <input id="serverUrl" placeholder="http://localhost:8787"></label>
-  </details>
-
-  <script src="popup.js"></script>
+  <script type="module" src="popup.js"></script>
 </body>
 </html>
