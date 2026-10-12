@@ -49,23 +49,40 @@
     return parts.join(' > ');
   }
 
+  const INTERACTIVE = 'a, button, input, select, textarea, label, summary, [role="button"], [role="link"], [role="menuitem"], [role="tab"], [role="option"], [role="checkbox"], [onclick]';
+
   function labelFor(el) {
-    if (!el) return '';
-    const aria = el.getAttribute?.('aria-label');
+    if (!el?.getAttribute) return '';
+    const aria = el.getAttribute('aria-label');
     if (aria) return clip(aria, 100);
     if (el.labels && el.labels[0]) return clip(el.labels[0].innerText, 100);
-    const ph = el.getAttribute?.('placeholder') || el.getAttribute?.('title') || el.getAttribute?.('alt');
-    if (ph) return clip(ph, 100);
+    const hint = el.getAttribute('placeholder') || el.getAttribute('title') || el.getAttribute('alt');
+    if (hint) return clip(hint, 100);
     if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') return el.name || '';
-    return clip(el.innerText || el.textContent, 100);
+    const text = clip(el.innerText || el.textContent, 400);
+    // A whole block of page text is not the name of what was clicked.
+    if (text) return text.length <= 100 || el.matches(INTERACTIVE) ? clip(text, 100) : '';
+    // Icon and picture controls carry their name on a child.
+    const inner = el.querySelector('img[alt]:not([alt=""]), [aria-label], [title]');
+    return clip(inner?.getAttribute('alt') || inner?.getAttribute('aria-label') || inner?.getAttribute('title')
+      || el.querySelector('svg title')?.textContent, 100);
+  }
+
+  // Something without a name of its own: say which list item or card it sits in.
+  function nearText(el) {
+    const box = el.closest?.('li, article, tr, figure, [role="listitem"], [role="row"], [role="article"]');
+    const text = box ? clip(box.innerText, 300) : '';
+    return text && text.length <= 300 ? clip(text, 80) : '';
   }
 
   function describe(el) {
+    const label = labelFor(el);
     return {
       tag: el.tagName?.toLowerCase(),
       type: el.getAttribute?.('type') || undefined,
       role: el.getAttribute?.('role') || undefined,
-      label: labelFor(el),
+      label,
+      near: label ? undefined : nearText(el) || undefined,
       selector: cssPath(el),
       href: el.href ? String(el.href) : undefined,
     };
@@ -81,26 +98,38 @@
     } catch { /* extension reloaded */ }
   }
 
-  const INTERACTIVE = 'a, button, input, select, textarea, label, summary, [role="button"], [role="link"], [role="menuitem"], [role="tab"], [role="option"], [role="checkbox"], [onclick]';
+  const NOT_TEXT = ['checkbox', 'radio', 'submit', 'button', 'file'];
 
   document.addEventListener('click', (e) => {
     const el = e.target instanceof Element ? (e.target.closest(INTERACTIVE) || e.target) : null;
-    if (!el) return;
+    // A click on the page background is not an action.
+    if (!el || el === document.documentElement || el === document.body) return;
     // Text inputs: the "change" event below is more useful than the click.
     if (el.tagName === 'INPUT' && !['checkbox', 'radio', 'submit', 'button'].includes(el.type)) return;
     if (el.tagName === 'TEXTAREA') return;
     send({ kind: 'click', target: describe(el) });
   }, true);
 
+  function valueOf(el) {
+    if (isSensitive(el)) return '[REDACTED]';
+    if (el.type === 'checkbox' || el.type === 'radio') return el.checked ? 'checked' : 'unchecked';
+    if (el.tagName === 'SELECT') return clip(el.options[el.selectedIndex]?.text);
+    if (el.type === 'file') return `[${el.files?.length || 0} file(s)]`;
+    return clip(el.value);
+  }
+
+  const lastSent = new WeakMap();  // field -> the value last recorded for it
+  const viaEnter = new WeakSet();  // fields whose last value was recorded by the Enter key
+
   document.addEventListener('change', (e) => {
     const el = e.target;
     if (!(el instanceof Element)) return;
-    let value;
-    if (isSensitive(el)) value = '[REDACTED]';
-    else if (el.type === 'checkbox' || el.type === 'radio') value = el.checked ? 'checked' : 'unchecked';
-    else if (el.tagName === 'SELECT') value = clip(el.options[el.selectedIndex]?.text);
-    else if (el.type === 'file') value = `[${el.files?.length || 0} file(s)]`;
-    else value = clip(el.value);
+    const value = valueOf(el);
+    // Enter already recorded this value (see keydown): the browser only fires "change" afterwards.
+    const repeat = viaEnter.has(el) && lastSent.get(el) === value;
+    viaEnter.delete(el);
+    if (repeat) return;
+    lastSent.set(el, value);
     send({ kind: 'input', target: describe(el), value });
   }, true);
 
@@ -119,6 +148,15 @@
     if (e.key !== 'Enter' || e.shiftKey) return;
     const el = e.target;
     if (!(el instanceof Element) || !['INPUT'].includes(el.tagName)) return;
+    // What was typed comes before the Enter that sends it, so the log reads in order.
+    if (!NOT_TEXT.includes(el.type)) {
+      const value = valueOf(el);
+      if (value && lastSent.get(el) !== value) {
+        lastSent.set(el, value);
+        viaEnter.add(el);
+        send({ kind: 'input', target: describe(el), value });
+      }
+    }
     send({ kind: 'key', key: 'Enter', target: describe(el) });
   }, true);
 

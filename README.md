@@ -13,6 +13,8 @@
 
 [Quickstart](#quickstart) · [How it works](#how-it-works) · [Choosing the AI](#choosing-the-ai) · [Privacy](#privacy) · [Roadmap](#roadmap)
 
+[![tests](https://github.com/subnautixx/showonce/actions/workflows/test.yml/badge.svg)](https://github.com/subnautixx/showonce/actions/workflows/test.yml)
+
 </div>
 
 ---
@@ -149,7 +151,7 @@ The only mode that needs something outside the extension: a small helper your as
 ## Development
 
 ```bash
-npm test        # 16 tests, no dependencies
+npm test        # no dependencies to install
 npm run demo    # helper server with a canned plan
 npm start       # helper server with the provider from server/.env
 ```

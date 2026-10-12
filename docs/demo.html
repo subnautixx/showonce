@@ -62,9 +62,14 @@
   .btn.wide { display: block; text-align: center; margin: 0; }
   .muted { color: #6f6a60; }
   #plan h2 { margin: 0 0 3px; font-size: 14px; }
-  #plan ol { margin: 8px 0; padding-left: 20px; }
-  #plan li { margin: 4px 0; }
-  #plan code { font-size: 10px; color: #6f6a60; }
+  #plan ol { list-style: none; margin: 10px 0 8px; padding: 0; }
+  #plan li { position: relative; display: flex; align-items: baseline; gap: 8px; padding: 0 0 10px 22px; }
+  #plan li::before { content: ""; position: absolute; left: 0; top: 4px; width: 11px; height: 11px; border-radius: 50%; border: 2.5px solid var(--k); background: #fff; z-index: 1; }
+  #plan li::after { content: ""; position: absolute; left: 4.5px; top: 12px; bottom: -6px; width: 2px; background: #e7e3da; }
+  #plan li:last-child { padding-bottom: 0; }
+  #plan li:last-child::after { display: none; }
+  #plan li span { flex: 1; }
+  #plan code { font: 600 10px/1.6 Consolas, monospace; color: var(--k); border: 1px solid color-mix(in srgb, var(--k) 35%, transparent); border-radius: 5px; padding: 0 5px; }
   #plan .run { border-top: 1px solid #e7e3da; padding-top: 8px; margin-top: 8px; }
 
   /* the result */
@@ -133,9 +138,9 @@
         <h2>Log new invoices in my sheet</h2>
         <div class="muted">Finds invoice emails, reads the amount and due date, and adds a row to “Invoices”.</div>
         <ol>
-          <li id="s1">Find new invoice emails <code>Mail</code></li>
-          <li id="s2">Extract amount and due date <code>Code</code></li>
-          <li id="s3">Add a row to “Invoices” <code>Sheets</code></li>
+          <li id="s1" style="--k:#5b3df5"><span>Find new invoice emails</span><code>Mail</code></li>
+          <li id="s2" style="--k:#b77d00"><span>Extract amount and due date</span><code>Code</code></li>
+          <li id="s3" style="--k:#1c9a5b"><span>Add a row to “Invoices”</span><code>Sheets</code></li>
         </ol>
         <div id="pRun" class="run"><span class="muted">Run it:</span> <b>weekdays at 9:00</b></div>
         <div style="margin-top:10px"><span id="pCreate" class="btn primary">Create in n8n</span><span class="btn">Download JSON</span></div>
@@ -167,7 +172,7 @@ const PATH = [
   [6.4, 910, 52], [6.6, 910, 52],
   [7.0, 780, 176], [7.15, 780, 176],
   [7.6, 792, 241], [7.8, 792, 241], [8.4, 560, 380], [11.4, 560, 380],
-  [12.2, 716, 416], [12.5, 716, 416],
+  [12.2, 716, 434], [12.5, 716, 434],
 ];
 const CLICKS = [1.0, 2.0, 3.9, 4.6, 6.5, 7.0, 7.6, 12.3];
 
@@ -274,14 +279,15 @@ function render(t) {
   show('popup', popup);
   const stopped = t >= 7.0;
   $('pDot').className = `dot ${recording ? 'on' : ''}`;
-  $('pStatus').textContent = recording ? 'Recording…' : stopped ? 'Recording ready' : 'Idle';
+  $('pStatus').textContent = recording ? 'Recording…' : stopped ? 'Recorded' : 'Ready to record';
   $('pCount').textContent = t >= 6.5 ? '9 actions' : '';
-  $('pRecord').className = `btn primary ${recording ? 'off' : ''}`;
-  $('pStop').className = `btn ${recording ? '' : 'off'}`;
+  // like the real popup: only the next thing to do is highlighted
+  $('pRecord').className = `btn ${recording ? 'off' : stopped ? '' : 'primary'}`;
+  $('pStop').className = `btn ${recording ? 'primary' : 'off'}`;
   const thinking = t >= 7.6 && t < 9.6;
   const planned = t >= 9.6;
   show('pAnalyze', !planned);
-  $('pTurn').className = `btn primary wide ${stopped && !thinking ? '' : 'off'}`;
+  $('pTurn').className = `btn wide ${stopped ? 'primary' : 'off'} ${thinking ? 'off' : ''}`;
   $('pTurn').textContent = thinking ? `Thinking${'.'.repeat(1 + Math.floor((t - 7.6) / 0.35) % 3)}` : '✨ Turn it into a workflow';
   $('pThinking').textContent = thinking ? 'Reading your actions and screenshots' : '';
   show('plan', planned);

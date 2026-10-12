@@ -86,7 +86,7 @@ export const server = http.createServer(async (req, res) => {
     console.log(`${req.method} ${path} 200 ${Date.now() - started}ms`);
   } catch (err) {
     const status = err instanceof HttpError ? err.status : 500;
-    if (status >= 500) console.error(err);
+    if (!(err instanceof HttpError)) console.error(err); // expected failures already have a clear message
     send(res, status, { error: err.message }, origin);
     console.log(`${req.method} ${path} ${status} ${Date.now() - started}ms`);
   }

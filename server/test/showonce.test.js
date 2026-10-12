@@ -132,6 +132,9 @@ test('event log is readable and keeps redactions', () => {
   assert.match(log, /Copied text: "R\$ 189,90"/);
   assert.match(log, /\[REDACTED\]/);
   assert.doesNotMatch(log, /screenshot/i);
+  // a picture link has no name of its own: the card around it says what it is
+  const card = { kind: 'click', target: { tag: 'a', label: '', near: 'Between Silence and the Abyss', selector: 'ul > li > a' } };
+  assert.equal(eventLog([card]), '#1 Clicked ul > li > a <a> near "Between Silence and the Abyss"');
 });
 
 test('buildParts samples screenshots evenly', () => {

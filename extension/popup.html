@@ -15,7 +15,7 @@
   <details id="setup" class="card setup">
     <summary><strong>Set up</strong> <span id="setupState" class="muted"></span></summary>
 
-    <h3>1 · The AI that reads your recording</h3>
+    <h3>The AI that reads your recording <span id="aiState"></span></h3>
     <select id="aiProvider" class="wide">
       <option value="">Choose one…</option>
       <option value="chat">Any AI chat, by copy and paste (no key)</option>
@@ -36,7 +36,7 @@
     <button id="aiCopyBtn" hidden>Copy the command</button>
     <p id="aiMsg" class="msg" role="status"></p>
 
-    <h3>2 · Your n8n <span id="n8nState"></span></h3>
+    <h3>Your n8n <span id="n8nState"></span></h3>
     <p class="hint">Optional. Connect it once and “Create in n8n” puts workflows straight into your n8n. Without it, “Download JSON” still works.</p>
     <label>n8n address <input id="n8nUrl" placeholder="http://localhost:5678"></label>
     <label>API key <input id="n8nKey" type="password" autocomplete="off" placeholder="from n8n → Settings → n8n API"></label>
@@ -55,14 +55,14 @@
     </div>
   </details>
 
-  <section class="card">
+  <section id="recorder" class="card">
     <div class="status">
       <span id="dot" class="dot"></span>
-      <span id="statusText">Idle</span>
+      <span id="statusText">Ready to record</span>
       <span id="count" class="muted"></span>
     </div>
     <div class="row">
-      <button id="startBtn" class="primary">● Record</button>
+      <button id="startBtn">● Record</button>
       <button id="stopBtn">■ Stop</button>
       <button id="clearBtn" class="ghost">Clear</button>
     </div>
@@ -70,7 +70,7 @@
   </section>
 
   <section class="card">
-    <button id="analyzeBtn" class="primary wide">✨ Turn it into a workflow</button>
+    <button id="analyzeBtn" class="wide">✨ Turn it into a workflow</button>
     <p id="msg" class="msg" role="status"></p>
     <details id="chatBox" class="settings">
       <summary>Use any AI chat (no key)</summary>
@@ -89,6 +89,7 @@
     <h2 id="planTitle"></h2>
     <p id="planSummary" class="muted"></p>
     <ol id="steps" class="steps"></ol>
+    <p id="planDoubt" class="doubt" hidden></p>
     <div id="questions"></div>
 
     <h3>Values</h3>
@@ -107,7 +108,7 @@
     <input id="triggerArg" class="wide" placeholder="">
 
     <div class="row">
-      <button id="deployBtn" class="primary">Create in n8n</button>
+      <button id="deployBtn">Create in n8n</button>
       <button id="downloadBtn">Download JSON</button>
     </div>
     <p id="deployMsg" class="msg" role="status"></p>

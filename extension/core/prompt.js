@@ -69,7 +69,9 @@ const host = (url) => { try { return new URL(url).host; } catch { return url || 
 function describeTarget(t) {
   if (!t) return 'something';
   const name = t.label ? `"${t.label}"` : t.selector || t.tag;
-  return `${name} <${t.tag || '?'}${t.type ? ` type=${t.type}` : ''}${t.role ? ` role=${t.role}` : ''}>`;
+  // An unnamed target (an icon, a picture) is described by the list item or card around it.
+  const near = !t.label && t.near ? ` near "${t.near}"` : '';
+  return `${name} <${t.tag || '?'}${t.type ? ` type=${t.type}` : ''}${t.role ? ` role=${t.role}` : ''}>${near}`;
 }
 
 export function describeEvent(ev) {

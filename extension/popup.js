@@ -70,11 +70,13 @@ function openBox(id) {
 }
 
 // Assistant mode: the plan arrives whenever the assistant submits it, possibly while this popup was closed.
-async function checkForPlan(id) {
+async function checkForPlan(analysis) {
   try {
-    const res = await fetch(`${await serverUrl()}/plan?id=${encodeURIComponent(id)}`);
+    const res = await fetch(`${await serverUrl()}/plan?id=${encodeURIComponent(analysis.id)}`);
     const data = await res.json().catch(() => ({}));
     if (data.plan) await chrome.storage.local.set({ plan: data.plan, analysis: { status: 'done' } });
+    // The helper restarted and forgot the recording. It is still here, so hand it over again (once).
+    else if (res.status === 404 && !analysis.retried) chrome.runtime.sendMessage({ type: 'showonce:analyze', retry: true });
     else if (!res.ok) await chrome.storage.local.set({ analysis: { status: 'error', error: data.error || `Server error ${res.status}` } });
   } catch { /* helper not reachable right now: keep waiting */ }
 }
@@ -97,15 +99,33 @@ function showAi(ai) {
   $('aiHint').textContent = need.hint || 'Pick how ShowOnce should understand what you recorded. You can change it any time.';
 }
 
+const AI_NAMES = { chat: 'any AI chat', claude: 'Claude', gemini: 'Gemini', openai: 'OpenAI', ollama: 'Ollama', mcp: 'your assistant' };
 const aiReady = (ai) => !!ai?.provider && (!AI[ai.provider]?.key || !!ai.apiKey);
 
 async function refreshSetup() {
   const { ai = null, n8n = null } = await chrome.storage.local.get(['ai', 'n8n']);
   const ready = aiReady(ai);
-  $('setupState').className = ready ? 'ok' : 'muted';
+  $('setupState').className = ready ? 'ok' : 'todo';
   $('setupState').textContent = ready ? `AI ✓ · n8n ${n8n ? '✓' : 'optional'}` : 'start here';
+  $('aiState').className = ready ? 'ok' : 'todo';
+  $('aiState').textContent = ready ? `✓ ${AI_NAMES[ai.provider]}` : 'needed';
   $('chatBox').hidden = !!ai?.provider && ai.provider !== 'chat';
+  await highlightNext();
   return { ai, n8n, ready };
+}
+
+// Exactly one button is highlighted at a time: the next thing to do.
+async function highlightNext() {
+  const { recording = false, events = [], plan = null, n8n = null } =
+    await chrome.storage.local.get(['recording', 'events', 'plan', 'n8n']);
+  const next = recording ? 'stopBtn'
+    : !events.length ? 'startBtn'
+    : !plan ? 'analyzeBtn'
+    : n8n ? 'deployBtn' : 'downloadBtn';
+  for (const id of ['startBtn', 'stopBtn', 'analyzeBtn', 'deployBtn', 'downloadBtn']) {
+    $(id).classList.toggle('primary', id === next);
+  }
+  $('recorder').classList.toggle('live', recording);
 }
 
 async function saveAi() {
@@ -149,7 +169,7 @@ function showN8n(n8n) {
   $('n8nUrl').value = n8n?.url || '';
   $('n8nKey').value = n8n?.apiKey || '';
   $('n8nState').className = n8n ? 'ok' : '';
-  $('n8nState').textContent = n8n ? `✓ ${new URL(n8n.url).host}` : '';
+  $('n8nState').textContent = n8n ? `✓ ${new URL(n8n.url).host}` : 'optional';
   $('n8nForgetBtn').hidden = !n8n;
 }
 
@@ -205,7 +225,7 @@ async function refreshStatus() {
   const { recording = false, events = [], analysis = null, ai = null } =
     await chrome.storage.local.get(['recording', 'events', 'analysis', 'ai']);
   $('dot').className = recording ? 'dot on' : 'dot';
-  $('statusText').textContent = recording ? 'Recording…' : events.length ? 'Recording ready' : 'Idle';
+  $('statusText').textContent = recording ? 'Recording…' : events.length ? 'Recorded' : 'Ready to record';
   $('count').textContent = events.length ? `${events.length} action${events.length === 1 ? '' : 's'}` : '';
   $('startBtn').disabled = recording;
   $('stopBtn').disabled = !recording;
@@ -217,20 +237,22 @@ async function refreshStatus() {
   const waiting = analysis?.status === 'waiting';
   clearInterval(planPoll);
   if (waiting) {
-    planPoll = setInterval(() => checkForPlan(analysis.id), 2000);
-    checkForPlan(analysis.id);
+    planPoll = setInterval(() => checkForPlan(analysis), 2000);
+    checkForPlan(analysis);
   }
   if (analysis?.status === 'error') setMsg('msg', analysis.error, 'err');
   else if (running) setMsg('msg', 'The model is watching your recording. This usually takes 15–60 s.');
   else if (waiting) setMsg('msg', 'Recording sent. Now ask your AI assistant (connected to ShowOnce over MCP): “turn my ShowOnce recording into a workflow”. The plan will show up here.');
   else if (ai?.provider === 'chat' && events.length && !recording) setMsg('msg', 'Copy the prompt below into any AI chat, then paste its answer.');
   else setMsg('msg', '');
+  await highlightNext();
 }
 
 // ---------- plan review ----------
 function renderPlan(plan) {
   currentPlan = plan;
   const review = $('review');
+  highlightNext();
   if (!plan) { review.hidden = true; return; }
   review.hidden = false;
   $('planTitle').textContent = plan.title;
@@ -244,9 +266,16 @@ function renderPlan(plan) {
       ' ',
       el('code', { textContent: KIND_LABELS[s.kind] || s.kind }),
     ]);
+    li.dataset.kind = s.kind.split('.')[0]; // colours the node on the wire
     if (s.kind === 'browser') li.title = 'No API for this step: it becomes a manual step in n8n.';
     steps.append(li);
   }
+
+  const unsure = typeof plan.confidence === 'number' && plan.confidence < 0.7;
+  $('planDoubt').hidden = !unsure;
+  $('planDoubt').textContent = unsure
+    ? `The AI was not fully sure about this one (${Math.round(plan.confidence * 100)}%). ${plan.questions?.length ? 'Read the notes below' : 'Check the steps'} before you create it.`
+    : '';
 
   const qs = $('questions');
   qs.replaceChildren(...(plan.questions || []).map((q) => el('div', { className: 'question', textContent: `? ${q}` })));
@@ -317,7 +346,7 @@ $('deployBtn').addEventListener('click', async () => {
   const { n8n } = await chrome.storage.local.get('n8n');
   if (!n8n) {
     openBox('setup');
-    return setMsg('deployMsg', 'Connect your n8n first (Set up, step 2), or use “Download JSON”.', 'err');
+    return setMsg('deployMsg', 'Connect your n8n first (in Set up), or use “Download JSON”.', 'err');
   }
   setMsg('deployMsg', 'Creating workflow in n8n…');
   try {

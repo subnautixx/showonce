@@ -7,8 +7,9 @@ The extension does all of it by itself. `server/` is an optional helper, needed 
 ## Layout
 - `extension/` Chrome MV3 extension (plain JS, ES modules, no build step)
   - `content.js` records clicks/inputs/copy/paste; redacts sensitive fields in the page
-  - `background.js` (module service worker) stores events in `chrome.storage.local`, screenshots via `captureVisibleTab`, calls the model
-  - `popup.*` Set up checklist (AI + n8n), record controls, plan review (variables, trigger), create/download, "any AI chat" copy/paste
+  - `background.js` (module service worker) stores events in `chrome.storage.local`, screenshots via `captureVisibleTab`, calls the model. One page change is one `navigate` event: redirects are merged into it, and its title and picture are taken once the page has loaded (`navigated`, `shoot`)
+  - `popup.*` Set up checklist (AI + n8n), record controls, plan review (variables, trigger), create/download, "any AI chat" copy/paste. Exactly one button is `.primary` at a time, the next thing to do (`highlightNext`)
+  - `docs/demo.html` copies the popup's look for the README animation: after a visual change to the popup, update it and run `node docs/render-demo.mjs`
   - `core/` logic shared with the helper. **No `node:` imports here**: the same files run in Chrome and in Node
     - `prompt.js` system prompt + event log formatting (the plan schema lives here)
     - `plan.js` validates/normalizes the model's plan
@@ -29,7 +30,7 @@ The extension does all of it by itself. `server/` is an optional helper, needed 
 - `serverUrl`: the helper, used only when `ai.provider` is `mcp`
 
 ## Commands (run at the repo root)
-- `npm test` — node:test, must stay green
+- `npm test` — node:test, must stay green (also runs on GitHub Actions, Node 20 and 22). `server/test/recorder.test.js` drives `background.js` with a fake `chrome`
 - `npm run demo` — helper with the mock provider (no API key)
 - `npm start` — helper with the provider from `server/.env` (copy `.env.example`)
 
