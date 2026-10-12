@@ -1,0 +1,41 @@
+{
+  "title": "Registrar faturas do Gmail na planilha",
+  "summary": "Busca e-mails de fatura não lidos, extrai o valor e adiciona uma linha na planilha de contas, avisando no Telegram.",
+  "trigger": { "type": "schedule", "cron": "0 9 * * 1-5" },
+  "variables": [
+    { "name": "remetente", "example": "faturas@exemplo.com", "description": "Quem envia as faturas", "dynamic": false },
+    { "name": "planilha", "example": "https://docs.google.com/spreadsheets/d/EXEMPLO/edit", "description": "Planilha de contas", "dynamic": false },
+    { "name": "aba", "example": "Contas", "description": "Aba da planilha", "dynamic": false },
+    { "name": "chat_id", "example": "123456789", "description": "Chat do Telegram que recebe o aviso", "dynamic": true }
+  ],
+  "steps": [
+    {
+      "kind": "gmail.search",
+      "description": "Buscar faturas não lidas",
+      "params": { "query": "from:{{var:remetente}} is:unread subject:fatura", "limit": 20 }
+    },
+    {
+      "kind": "transform",
+      "description": "Extrair data, assunto e valor",
+      "params": {
+        "jsCode": "return $input.all().map(item => {\n  const text = item.json.snippet || '';\n  const m = text.match(/R\\$\\s*([\\d.]+,\\d{2})/);\n  return { json: {\n    data: new Date().toISOString().slice(0, 10),\n    assunto: item.json.Subject || '',\n    valor: m ? m[1] : ''\n  } };\n});"
+      }
+    },
+    {
+      "kind": "sheets.append",
+      "description": "Adicionar linha na planilha",
+      "params": {
+        "spreadsheetUrl": "{{var:planilha}}",
+        "sheetName": "{{var:aba}}",
+        "columns": { "Data": "{{prev:data}}", "Assunto": "{{prev:assunto}}", "Valor (R$)": "{{prev:valor}}" }
+      }
+    },
+    {
+      "kind": "telegram.send",
+      "description": "Avisar no Telegram",
+      "params": { "chatId": "{{var:chat_id}}", "text": "Nova fatura registrada: R$ {{prev:Valor (R$)}}" }
+    }
+  ],
+  "confidence": 0.82,
+  "questions": ["A fatura sempre vem do mesmo remetente?"]
+}

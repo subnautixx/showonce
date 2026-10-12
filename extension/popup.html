@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>ShowOnce</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <span class="mark" aria-hidden="true"></span>
+    <strong>ShowOnce</strong>
+    <span class="tagline">do it once, automate forever</span>
+  </header>
+
+  <section class="card">
+    <div class="status">
+      <span id="dot" class="dot"></span>
+      <span id="statusText">Idle</span>
+      <span id="count" class="muted"></span>
+    </div>
+    <div class="row">
+      <button id="startBtn" class="primary">● Record</button>
+      <button id="stopBtn">■ Stop</button>
+      <button id="clearBtn" class="ghost">Clear</button>
+    </div>
+    <p class="hint">Click Record, then do your task normally in this browser. Passwords and card numbers are never recorded.</p>
+  </section>
+
+  <section class="card">
+    <button id="analyzeBtn" class="primary wide">✨ Turn it into a workflow</button>
+    <p id="msg" class="msg" role="status"></p>
+    <details class="settings">
+      <summary>No API key? Use any AI chat</summary>
+      <p class="hint">Copy the prompt (or save it as a file), send it to ChatGPT, Claude, Gemini… then paste the answer below. Screenshots are not included.</p>
+      <div class="row">
+        <button id="copyPromptBtn">Copy prompt</button>
+        <button id="savePromptBtn">Save as .md</button>
+      </div>
+      <textarea id="planText" class="wide" rows="4" placeholder="Paste the AI's answer here"></textarea>
+      <button id="usePlanBtn" class="wide">Use this plan</button>
+      <p id="chatMsg" class="msg" role="status"></p>
+    </details>
+  </section>
+
+  <section id="review" class="card" hidden>
+    <h2 id="planTitle"></h2>
+    <p id="planSummary" class="muted"></p>
+    <ol id="steps" class="steps"></ol>
+    <div id="questions"></div>
+
+    <h3>Values</h3>
+    <p class="hint">Tick the ones that change every time the workflow runs.</p>
+    <div id="vars" class="vars"></div>
+
+    <h3>Run it</h3>
+    <div class="row">
+      <select id="trigger">
+        <option value="manual">Manually</option>
+        <option value="schedule">On a schedule</option>
+        <option value="webhook">When called (webhook)</option>
+        <option value="gmail">When a matching email arrives</option>
+      </select>
+    </div>
+    <input id="triggerArg" class="wide" placeholder="">
+
+    <div class="row">
+      <button id="deployBtn" class="primary">Create in n8n</button>
+      <button id="downloadBtn">Download JSON</button>
+    </div>
+    <p id="deployMsg" class="msg" role="status"></p>
+  </section>
+
+  <details class="settings">
+    <summary>Settings</summary>
+    <label>ShowOnce server <input id="serverUrl" placeholder="http://localhost:8787"></label>
+  </details>
+
+  <script src="popup.js"></script>
+</body>
+</html>

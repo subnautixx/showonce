@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "showonce": {
+      "command": "node",
+      "args": ["server/src/mcp.js"]
+    }
+  }
+}

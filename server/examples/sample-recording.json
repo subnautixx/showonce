@@ -1,0 +1,13 @@
+{
+  "events": [
+    { "kind": "start", "url": "https://mail.google.com/mail/u/0/#inbox", "title": "Caixa de entrada - Gmail", "ts": 1760227200000 },
+    { "kind": "input", "url": "https://mail.google.com/mail/u/0/#inbox", "title": "Gmail", "target": { "tag": "input", "label": "Pesquisar e-mail", "selector": "input[name=\"q\"]" }, "value": "from:faturas@exemplo.com is:unread", "ts": 1760227203000 },
+    { "kind": "key", "key": "Enter", "url": "https://mail.google.com/mail/u/0/#inbox", "title": "Gmail", "target": { "tag": "input", "label": "Pesquisar e-mail" }, "ts": 1760227204000 },
+    { "kind": "click", "url": "https://mail.google.com/mail/u/0/#search", "title": "Gmail", "target": { "tag": "tr", "label": "Sua fatura de outubro chegou - R$ 189,90" }, "ts": 1760227207000 },
+    { "kind": "copy", "url": "https://mail.google.com/mail/u/0/#search/abc", "title": "Gmail", "text": "R$ 189,90", "ts": 1760227211000 },
+    { "kind": "navigate", "url": "https://docs.google.com/spreadsheets/d/EXEMPLO/edit", "title": "Contas - Planilhas Google", "ts": 1760227215000 },
+    { "kind": "paste", "url": "https://docs.google.com/spreadsheets/d/EXEMPLO/edit", "title": "Contas", "target": { "tag": "div", "label": "C12" }, "text": "R$ 189,90", "ts": 1760227219000 },
+    { "kind": "input", "url": "https://web.telegram.org/a/", "title": "Telegram", "target": { "tag": "div", "label": "Mensagem" }, "value": "Nova fatura registrada: R$ 189,90", "ts": 1760227226000 },
+    { "kind": "input", "url": "https://accounts.example.com/login", "title": "Login", "target": { "tag": "input", "type": "password", "label": "Senha" }, "value": "[REDACTED]", "ts": 1760227230000 }
+  ]
+}
