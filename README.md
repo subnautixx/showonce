@@ -4,8 +4,8 @@
 
 ### Do a task once in your browser. Get an n8n workflow that does it forever.
 
-<!-- Replace with your launch GIF: 10s of doing the task by hand → the workflow appearing in n8n and running -->
-<img src="docs/demo.gif" alt="ShowOnce demo" width="720">
+<!-- The extension popup with an example recording. A screen capture of a real task, ending in n8n, would be even better. -->
+<img src="docs/demo.gif" alt="The ShowOnce popup: record a task, the AI lists the steps it understood, you get an n8n workflow" width="380">
 
 **No nodes to drag. No expressions to learn. Just show it.**
 
